@@ -1,0 +1,348 @@
+
+<html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="ProductivityGuy.css">
+    <script>
+        //global variables
+        var curentTask;
+        var pgDB;
+        var defaultDB = 
+            {   
+            habits :
+            [
+                {
+                    name : "Cleaning",
+                    tasks :[
+                        "pickup clutter",
+                        "do laundry"
+                    ]
+                },
+                {
+                    name : "Language Study",
+                    tasks :[
+                        "Flashcards 10 min"
+                    ]
+                },
+                {
+                    name : "Arts",
+                    tasks :[
+                        "guitar",
+                        "Drawing"
+                    ]
+                },
+                {
+                    name : "Physical",
+                    tasks :[
+                        "nordic track",
+                        "Weightlifting"
+                    ]
+                },
+                {
+                    name : "Mental",
+                    tasks :[
+                        "meditate",
+                        "record mood in mood journal",
+                    ]
+                },
+                {
+                    name : "Take Vitamins",
+                    tasks :[
+                ]},
+                {
+                    name : "Work related",
+                    tasks :[
+                        "Online Class - One Lecture",
+                        "update LinkedIn"
+                    ]
+                },
+            ]
+            }
+
+            //TODO split load so it doesn't recheck everything when you update with new tasks
+        function loadHabits(habitList = pgDB.habits)
+        {
+            var habitListElement = document.getElementById("habits-list");
+            habitListElement.innerHTML = "";
+
+            var habits = habitList;
+            //populate the DOM with habits loaded in (or default habits)
+            for(let i = 0; i < habits.length; i++)
+            {
+                var details = document.createElement("details");
+                var listobj = document.createElement("li");
+
+                var summary = document.createElement("summary");
+                var label = document.createElement("label");
+                label.for = habits[i].name;
+
+                var input = document.createElement("input");
+                input.type = "checkbox";
+                input.name = "habit";
+                input.value = habits[i].name;
+                input.checked = habits[i].checked;
+                input.addEventListener('change', (event) => {
+                    console.log("in event");
+                    habits[i].checked = event.currentTarget.checked;
+                });
+
+                var text = document.createTextNode(habits[i].name);
+                var a = document.createElement("a");
+                a.textContent = "add task";
+                a.href = "#";
+                a.onclick = () => {addTask(habits[i].name)};
+                listobj.append(details);
+                listobj.append(a);
+                details.append(summary);
+                summary.append(label);
+                label.append(input);
+                label.append(text);
+
+                if(habits[i].tasks.length > 0)
+                {
+                    details.append(loadTaskList(habits[i]));
+                }
+                
+                habitListElement.append(listobj);
+                // habitsStr += '<li><details><summary><label for="' + habits[i].name 
+                // + '"><input class="habit" type="checkbox" name="habit" value="'
+                // + habits[i].name  +'" checked>'+ habits[i].name  +'</label></summary>';
+
+                
+                // habitsStr += '</details><a href="#" onclick="addTask(\''+habits[i].name+'\')">add task</a></li>'
+            }
+        }
+
+        function loadTaskList(parentHabit)
+        {
+            var ul = document.createElement("ul");
+            for ( let i = 0; i < parentHabit.tasks.length; i++)
+            {
+                var li = document.createElement("li");
+                li.textContent  = parentHabit.tasks[i];
+                ul.append(li);
+            }
+            return ul;
+        }
+
+        //We need to make sure the DOM is loaded before opening 
+        //local storage
+        var documentLoaded = function(){
+            //If we don't have any localStorage then use the default habits
+            if(JSON.parse(localStorage.getItem('ProductivityGuyDB') == null))
+            {
+                console.log("using default DB");
+                pgDB = defaultDB;
+            }
+            else
+            {
+                console.log("ProductivityGuyDB found! loading..");
+                pgDB = JSON.parse(localStorage.getItem('ProductivityGuyDB'));
+            }
+            addRemoveChecks(pgDB.habits, true);
+            loadHabits(pgDB.habits);
+        };
+
+        function addRemoveChecks(habits, checked)
+        {
+            for(let i = 0; i < habits.length; i++)
+            {
+                if(checked)
+                {
+                    habits[i].checked = true;
+                }
+                else
+                {
+                    delete habits[i].checked;
+                }
+            }
+        }
+        function selectAllBoxes(checked)
+        {
+            let checkboxes = document.querySelectorAll('input[name="habit"]');
+            for (let i = 0; i<checkboxes.length; i++)
+            {
+                if(checkboxes[i].checked != checked)
+                    checkboxes[i].click();
+            }
+        }
+
+
+        //Save the database when the window is exited
+        window.addEventListener("beforeunload", function(event) 
+        { 
+            addRemoveChecks(pgDB.habits, false);
+            localStorage.setItem('ProductivityGuyDB', JSON.stringify(pgDB));
+        });
+
+        //Choose a habit to do and a subtask based on selected habit checkboxes
+        //try to find any tasks within that habit to do
+        //if not we will just output the name of the habit
+        function chooseSomething() {
+            var checkboxes = document.querySelectorAll('input[name="habit"]:checked');
+
+            if(checkboxes.length == 0)
+            {
+                alert("Please select at least one habit");
+                return;
+            }
+            var number = Math.floor(Math.random() * checkboxes.length);
+            var selectedItem = checkboxes[number].value;
+
+
+            let habit = pgDB.habits.find( x=> x.name == selectedItem);//findHabitTask(selectedItem);
+            console.log("found matching habit"+ habit.name +" check for tasks");
+            //if Habit has subtasks then choose a random one to display
+            if(habit.tasks.length != 0)
+            {
+                number = Math.floor(Math.random() * habit.tasks.length);
+                selectedItem +=":" + habit.tasks[number];
+            }
+            var element = document.getElementById("chosen-task-name");
+            element.innerHTML = selectedItem;
+
+            //Display all the task buttons that can act on the (now) displayed task/hobby
+            document.getElementById("chosen-task").hidden = false;
+        }
+
+        var timer;
+        function countDown()
+        {
+            //remove interval if timer has been click previously
+            clearInterval(timer);
+            var minutes = document.getElementById("start-time").value;
+            var timerStartVal = new Date().getTime() + minutes*60*1000;
+            var secRemaining = minutes*60;
+            var alarm = new Audio("alarm.mp3"); 
+
+            // Update the count down every 1 second
+            timer = setInterval(function() {
+                secRemaining--;
+                
+                var minutes = Math.floor(secRemaining / 60);
+                var seconds = secRemaining % 60;
+                if (secRemaining < 1)
+                {
+                    alarm.play();
+                    clearInterval(timer);
+                }
+                document.getElementById("remaining-min").innerHTML = minutes + " min ";
+                document.getElementById("remaining-sec").innerHTML = seconds + " sec";
+            }
+            ,1000);
+        }
+
+        function finishTask(habitName = null)
+        {
+            if(habitName == null)
+            {
+                habitName = document.getElementById("chosen-task-name").textContent.split(":")[0];
+            }
+
+            var habit = pgDB.habits.find(x => x.name == habitName);
+            habit.checked = false;
+            loadHabits(pgDB.habits);
+        }
+        function delTask(habitName, taskToDel)
+        {
+            console.log("TASK TO DEL " + taskToDel);
+            if(habitName == null)
+            {
+                let str = document.getElementById("chosen-task-name").textContent.split(":");
+                habitName = str[0];
+                taskToDel = str[1];
+            }
+
+            let habitIndex = pgDB.habits.findIndex(x => x.name == habitName);
+            let taskIndex = pgDB.habits[habitIndex].tasks.findIndex(x => x == taskToDel);
+            console.log("found habit "+habitIndex+" found task:  "+taskIndex);
+
+            console.log(pgDB.habits[habitIndex].tasks[taskIndex]);
+            pgDB.habits[habitIndex].tasks.splice(taskIndex,1);
+            // addRemoveChecks(pgDB.habit, false);
+            // localStorage.setItem('ProductivityGuyDB', JSON.stringify(pgDB));
+            loadHabits();
+            cancelTask();
+        }
+        function finishAndDelTask()
+        {
+            let str = document.getElementById("chosen-task-name").textContent.split(":");
+            let chosenHabit = str[0];
+            let taskToDel = str[1];
+
+            finishTask(chosenHabit);
+            delTask(chosenHabit,taskToDel);
+        }
+
+        function addHabit()
+        {
+            var habitName = window.prompt("Please Enter the Habbit to add");
+            if (habitName == null || habitName == "") {
+                //the prompt has been canceled
+                return 0;
+            }
+            var newHabit = new Object();
+            newHabit.name = habitName;
+            newHabit.tasks = new Array();
+            pgDB.habits.push(newHabit);
+
+            loadHabits();
+        }
+
+        function addTask(habitName)
+        {
+            var taskName = window.prompt("Please Enter the Task to add to " + habitName);
+            if (taskName == null || taskName == "") {
+                //the prompt has been canceled
+                return 0;
+            }
+            let habit = pgDB.habits.find(x => x.name == habitName);
+            habit.tasks.push(taskName);
+
+            // addRemoveChecks(pgDB.habit, false);
+            // localStorage.setItem('ProductivityGuyDB', JSON.stringify(pgDB));
+            loadHabits(pgDB.habits);
+        }
+        function cancelTask()
+        {
+            document.getElementById("chosen-task").hidden = true;
+        }
+        
+    </script>
+    </head>
+    <body onload="documentLoaded()">
+        <!-- <form onsubmit="return chooseSomething()"> -->
+        <div>
+        <input class="task-btn" onclick="addHabit()" type="button" name="addHabitBtn" value="Add Habit">
+        <input class="task-btn" onclick="selectAllBoxes(true)" type="button" name="selectAllBoxes" value="Select All">
+        <input class="task-btn" onclick="selectAllBoxes(false)" type="button" name="deselectAllBoxes" value="Deselect All">
+    </div>
+        <!-- list of habits that we draw from and pull their subtasks if necessary -->
+        <h1>Habits</h1>
+        <sup class="explanation">?
+            <span class="explanationtext">
+                These are habits that we want to continue to do everyday,
+                if they are check the their subtasks (or their habit name, if no tasks)
+                will be added to the list of task to search through via "Choose Task" 
+            </span>
+        </sup>
+        
+        <ul id="habits-list"></ul>
+
+        <input type="button" onclick="chooseSomething()" value="Choose Task">
+
+        <div id ="chosen-task" hidden>
+            <h1 id="chosen-task-name"></h1>
+            <input class="task-btn" onclick="finishTask()" type="button" name="finishTaskBtn" value="Finish Task" >
+            <input class="task-btn" onclick="finishAndDelTask()" type="button" name="finishAndDelTaskBtn" value="Finish & Del Task" >
+            <input class="task-btn" onclick="delTask()" type="button" name="delTaskBtn" value="Delete Task" >
+            <input class="task-btn" onclick="cancelTask()" type="button" name="cancelTaskBtn" value="Cancel Task" >
+            <!-- <input class="task-btn" onclick="cancelTask()" type="button" name="cancelTaskBtn" value="Cancel Task" hidden> -->
+        </div>
+        <div id="timer">
+            <input type="button" onclick="countDown()" value="Start Timer"> <input type="text" id="start-time" value="10"> min
+            <div id="time-remaining"><span id="remaining-min"></span><span id="remaining-sec"></span></div>
+        </div>
+        <object id="haikus" width="400px" data="haiku.html" ></object>
+        
+    </body>
+</html>

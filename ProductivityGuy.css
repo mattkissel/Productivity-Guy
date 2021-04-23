@@ -1,0 +1,61 @@
+#chosen-item{
+    font-weight: normal;
+}
+body{
+    margin-left:10em;
+    margin-right: 10em;
+    /* width: 20rem; */
+}
+a{
+    font-size:x-small;
+    vertical-align: top;
+    margin-left:1em;
+}
+#haikus{
+    float: right;
+}
+ul{
+    list-style-type: none;
+    padding-left:0;
+}
+details
+{
+    display: inline-block;
+}
+details>ul{
+    list-style-type: circle;
+    padding-left: 2em;
+}
+
+.explanation {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .explanation .explanationtext {
+    visibility: hidden;
+    width: 200px;
+    background-color: rgb(246, 240, 208);
+    color: rgb(0, 0, 0);
+    border-radius: 2px;
+    padding: 0.5em 0.5em;
+    display: inline-block;
+    font-size: smaller;
+  
+    /* Position the tooltip, if not positioned absolute
+    other blocks with be positioned around it */
+    position: absolute;
+    z-index: 1;
+  }
+  
+  .explanation:hover .explanationtext {
+    visibility: visible;
+  }
+h1{
+    margin-bottom: 10;
+    display: inline-block;
+
+}
+ul{
+    margin-top:0;
+}

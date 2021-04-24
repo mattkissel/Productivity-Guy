@@ -88,10 +88,18 @@
                 var text = document.createTextNode(habits[i].name);
                 var a = document.createElement("a");
                 a.textContent = "add task";
-                a.href = "#";
                 a.onclick = () => {addTask(habits[i].name)};
+                
+                var delBtn = document.createElement("a");
+                delBtn.textContent = "delete habit";
+                delBtn.setAttribute("class", "clickable");
+                delBtn.addEventListener("click", function(e){
+                    delHabit(e, habits[i].name);
+                });
+
                 listobj.append(details);
                 listobj.append(a);
+                listobj.append(delBtn);
                 details.append(summary);
                 summary.append(label);
                 label.append(input);
@@ -286,6 +294,15 @@
             pgDB.habits.push(newHabit);
 
             loadHabits();
+        }
+        function delHabit(event, habitName)
+        {   
+            if (window.confirm("Are you sure you want to delete " + habitName)) 
+            {
+                //Filter returns a new array without the habitName we compare to
+                pgDB.habits = pgDB.habits.filter(habit => habit.name != habitName);
+                loadHabits(pgDB.habits);    
+            }
         }
 
         function addTask(habitName)

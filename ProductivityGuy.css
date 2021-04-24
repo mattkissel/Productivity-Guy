@@ -10,6 +10,12 @@ a{
     font-size:x-small;
     vertical-align: top;
     margin-left:1em;
+    color:#1a0db3;
+    text-decoration: underline;
+}
+a:hover
+{
+    cursor: pointer;
 }
 #haikus{
     float: right;
